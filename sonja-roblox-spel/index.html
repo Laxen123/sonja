@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sonjas Roblox-spel</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;user-select:none;-webkit-user-select:none;
+    font-family:'Comic Sans MS','Segoe UI',sans-serif;background:#aee3ff;}
+  body{background:linear-gradient(180deg,#bfe9ff 0%, #8fd0ff 55%, #6fb7f0 100%);}
+  canvas{display:block;touch-action:none;}
+  #hud{position:fixed;top:12px;left:0;right:0;text-align:center;color:#fff;font-size:26px;font-weight:bold;
+    text-shadow:0 3px 6px rgba(0,0,0,.35);pointer-events:none;}
+  #help{position:fixed;top:50px;left:0;right:0;text-align:center;color:#fff;font-size:14px;
+    text-shadow:0 2px 4px rgba(0,0,0,.35);opacity:.9;pointer-events:none;}
+  #win{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+    background:rgba(40,10,70,.45);color:#fff;font-size:40px;font-weight:bold;text-shadow:0 4px 10px rgba(0,0,0,.5);}
+  #win button{margin-top:18px;font-size:20px;padding:12px 24px;border:0;border-radius:999px;background:#ffe04d;
+    color:#3a1a5e;font-weight:bold;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.25);}
+  /* touch dpad */
+  #pad{position:fixed;bottom:18px;left:18px;display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:6px;}
+  #pad button,#jump{border:0;border-radius:14px;background:rgba(255,255,255,.85);font-size:22px;font-weight:bold;
+    color:#3a1a5e;box-shadow:0 4px 0 rgba(0,0,0,.2);cursor:pointer;touch-action:none;}
+  #pad .sp{visibility:hidden;}
+  #jump{position:fixed;bottom:30px;right:24px;width:84px;height:84px;border-radius:50%;font-size:18px;background:#ffe04d;}
+  #codesBtn{position:fixed;top:10px;right:12px;z-index:5;border:0;border-radius:999px;padding:9px 15px;font-size:15px;font-weight:bold;background:#ffe04d;color:#3a1a5e;box-shadow:0 4px 0 rgba(0,0,0,.2);cursor:pointer;}
+  #codesPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,8,40,.6);z-index:10;}
+  #codesPanel .inner{position:relative;background:#2b2140;color:#fff;width:min(540px,92vw);max-height:82vh;overflow:auto;border-radius:18px;padding:18px 22px 22px;border:3px solid #ffe04d;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  #codesPanel h2{color:#ffe04d;margin:.6em 0 .25em;font-size:20px;}
+  #codesPanel .code{display:flex;justify-content:space-between;gap:12px;padding:6px 8px;border-radius:8px;font-size:15px;}
+  #codesPanel .code:nth-child(even){background:rgba(255,255,255,.06);}
+  #codesPanel .code b{color:#8df0ff;font-family:monospace;}
+  #codesPanel .code span{opacity:.75;font-size:12px;text-align:right;}
+  #codesClose{position:absolute;top:14px;right:16px;border:0;border-radius:999px;background:#ff7eb6;color:#3a1a5e;font-weight:bold;padding:7px 13px;cursor:pointer;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="hud">⭐ <span id="score">0</span> / 8</div>
+  <div id="help">🎮 Gå: piltangenter/WASD · Hoppa högt: mellanslag · 🧗 hoppa upp på klossarna & obbyn!</div>
+  <div id="win">🎉 Du klarade det!<button onclick="restart()">Spela igen</button></div>
+  <div id="pad">
+    <button class="sp"></button><button data-k="up">⬆️</button><button class="sp"></button>
+    <button data-k="left">⬅️</button><button class="sp"></button><button data-k="right">➡️</button>
+    <button class="sp"></button><button data-k="down">⬇️</button><button class="sp"></button>
+  </div>
+  <button id="jump">HOPP</button>
+  <button id="codesBtn">📋 Koder</button>
+  <div id="codesPanel"><div class="inner"><button id="codesClose">✕ Stäng</button><div id="codesList"></div></div></div>
+<script>
+const W=window.innerWidth, H=window.innerHeight;
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x9fd6ff, 40, 90);
+const camera=new THREE.PerspectiveCamera(50, W/H, 0.1, 200);
+camera.position.set(0,6,-10);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(W,H); renderer.setPixelRatio(Math.min(2,window.devicePixelRatio));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.setClearColor(0x9fd6ff,1);
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.72));
+const sun=new THREE.DirectionalLight(0xffffff,0.8); sun.position.set(10,18,8); scene.add(sun);
+const fill=new THREE.DirectionalLight(0xcfe6ff,0.3); fill.position.set(-8,6,-10); scene.add(fill);
+
+// ===== FLOOR (Roblox baseplate) =====
+function gridTex(){
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  x.fillStyle='#7ec85a';x.fillRect(0,0,128,128);
+  x.fillStyle='#74bd52';x.fillRect(0,0,64,64);x.fillRect(64,64,64,64);
+  x.strokeStyle='#5fa843';x.lineWidth=4;x.strokeRect(0,0,128,128);
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(30,30);return t;
+}
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(60,60),
+  new THREE.MeshStandardMaterial({map:gridTex(),roughness:0.95}));
+floor.rotation.x=-Math.PI/2; scene.add(floor);
+
+// ===== PLAYER (the avatar) =====
+const player=new THREE.Group(); scene.add(player);
+const SKIN=0xf4c6a0,SWEATER=0xf6efde,JEANS=0x4f6f9a,HAIR=0xeec25c,SHOE=0xffffff,DARK=0x232a33,CYAN=0x2ee6da;
+function mk(w,h,d,c,r){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:r===undefined?0.5:r,metalness:0}));}
+function add(w,h,d,c,x,y,z){const m=mk(w,h,d,c);m.position.set(x,y,z);player.add(m);return m;}
+function pc(p,w,h,d,c,x,y,z){const m=mk(w,h,d,c);m.position.set(x,y,z);p.add(m);return m;}
+add(1.25,1.9,0.62,SWEATER,0,0,0);
+add(1.15,1.15,1.15,SKIN,0,1.5,0);
+const shoL=new THREE.Group();shoL.position.set(-0.875,0.92,0);player.add(shoL);
+pc(shoL,0.5,2.0,0.5,SWEATER,0,-1.0,0);pc(shoL,0.5,0.55,0.5,SKIN,0,-1.85,0);
+const shoR=new THREE.Group();shoR.position.set(0.875,0.92,0);player.add(shoR);
+pc(shoR,0.5,2.0,0.5,SWEATER,0,-1.0,0);pc(shoR,0.5,0.55,0.5,SKIN,0,-1.85,0);
+const hipL=new THREE.Group();hipL.position.set(-0.33,-0.95,0);player.add(hipL);
+pc(hipL,0.56,2.2,0.56,JEANS,0,-1.1,0);pc(hipL,0.6,0.4,0.78,SHOE,0,-2.28,0.1);
+const hipR=new THREE.Group();hipR.position.set(0.33,-0.95,0);player.add(hipR);
+pc(hipR,0.56,2.2,0.56,JEANS,0,-1.1,0);pc(hipR,0.6,0.4,0.78,SHOE,0,-2.28,0.1);
+add(1.2,0.55,1.2,HAIR,0,2.12,0);add(1.22,1.25,0.45,HAIR,0,1.42,-0.45);add(1.15,0.42,0.22,HAIR,0,1.86,0.52);
+add(0.36,2.7,0.5,HAIR,-0.72,0.35,0.06);add(0.36,2.7,0.5,HAIR,0.72,0.35,0.06);add(1.1,1.9,0.26,HAIR,0,0.3,-0.5);
+// headphones
+const band=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.1,12,32),new THREE.MeshStandardMaterial({color:DARK,roughness:0.35,metalness:0.2}));
+band.position.set(0,1.7,0);player.add(band);
+function cup(x){const g=new THREE.Group();g.position.set(x,1.42,0.18);
+  const c=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.2,24),new THREE.MeshStandardMaterial({color:DARK,roughness:0.35,metalness:0.2}));c.rotation.z=Math.PI/2;g.add(c);
+  const r=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.22,24),new THREE.MeshStandardMaterial({color:CYAN,roughness:0.3,emissive:0x0c6f6a}));r.rotation.z=Math.PI/2;g.add(r);player.add(g);}
+cup(-0.72);cup(0.72);
+// cool face
+function faceTex(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  function eye(ex){x.fillStyle='#241f2e';x.beginPath();x.ellipse(ex,118,17,23,0,0,7);x.fill();
+    const g=x.createRadialGradient(ex-3,112,2,ex,118,16);g.addColorStop(0,'#a99bff');g.addColorStop(.55,'#5b6bd6');g.addColorStop(1,'#241f2e');
+    x.fillStyle=g;x.beginPath();x.ellipse(ex,120,11,16,0,0,7);x.fill();
+    x.fillStyle='#fff';x.beginPath();x.arc(ex-5,110,4.6,0,7);x.fill();x.beginPath();x.arc(ex+5,126,2.4,0,7);x.fill();
+    x.strokeStyle='#241f2e';x.lineWidth=5;x.lineCap='round';x.beginPath();x.moveTo(ex-16,104);x.quadraticCurveTo(ex,93,ex+17,102);x.stroke();
+    x.lineWidth=3;x.beginPath();x.moveTo(ex+15,101);x.lineTo(ex+25,95);x.stroke();x.beginPath();x.moveTo(ex+16,106);x.lineTo(ex+26,105);x.stroke();}
+  eye(96);eye(160);
+  x.strokeStyle='#b07b42';x.lineWidth=4;x.lineCap='round';x.beginPath();x.moveTo(82,88);x.quadraticCurveTo(96,82,110,87);x.stroke();
+  x.beginPath();x.moveTo(146,87);x.quadraticCurveTo(160,82,174,88);x.stroke();
+  x.fillStyle='rgba(255,150,165,.5)';x.beginPath();x.ellipse(72,152,15,9,0,0,7);x.fill();x.beginPath();x.ellipse(184,152,15,9,0,0,7);x.fill();
+  x.strokeStyle='#c4506a';x.lineWidth=6;x.lineCap='round';x.beginPath();x.arc(128,150,24,0.16*Math.PI,0.84*Math.PI);x.stroke();
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t;}
+const face=new THREE.Mesh(new THREE.PlaneGeometry(1.12,1.12),new THREE.MeshBasicMaterial({map:faceTex(),transparent:true}));
+face.position.set(0,1.5,0.586);player.add(face);
+function flagTex(){const c=document.createElement('canvas');c.width=228;c.height=120;const x=c.getContext('2d');
+  for(let i=0;i<13;i++){x.fillStyle=(i%2)?'#fff':'#b22234';x.fillRect(0,i*120/13,228,120/13);}
+  x.fillStyle='#3c3b6e';x.fillRect(0,0,96,65);x.fillStyle='#fff';
+  for(let r=0;r<4;r++)for(let cl=0;cl<5;cl++){x.beginPath();x.arc(12+cl*19,9+r*16,2.6,0,7);x.fill();}return new THREE.CanvasTexture(c);}
+const flag=new THREE.Mesh(new THREE.PlaneGeometry(0.66,0.35),new THREE.MeshBasicMaterial({map:flagTex(),transparent:true}));
+flag.position.set(0,0.2,0.316);player.add(flag);
+
+// ===== SCENERY =====
+const platforms=[];
+function tree(x,z){const g=new THREE.Group();
+  const t=mk(0.6,2,0.6,0x8a5a2b);t.position.y=1;g.add(t);
+  const l=mk(2.4,2.2,2.4,0x4fb04f);l.position.y=2.8;g.add(l);
+  const l2=mk(1.6,1.4,1.6,0x57c257);l2.position.y=4.0;g.add(l2);
+  g.position.set(x,0,z);scene.add(g);}
+[[16,16],[-16,14],[15,-15],[-18,-13],[9,21],[-21,7],[22,-3]].forEach(p=>tree(p[0],p[1]));
+function block(x,z,c,h){const b=mk(2,h,2,c);b.position.set(x,h/2,z);scene.add(b);platforms.push({x,z,hx:1,hz:1,top:h});return b;}
+block(5,8,0xff5d6c,2);block(-6,-3,0x5db4ff,3);block(12,2,0x6be06b,1.5);
+block(-11,9,0xffa83d,2.5);block(2,-7,0xb98bff,2);block(-3,12,0xffe04d,1.5);
+
+// ===== COINS (stars) =====
+const coins=[];
+function coin(x,z){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.16,18),
+    new THREE.MeshStandardMaterial({color:0xffd23d,emissive:0x6b5200,metalness:0.3,roughness:0.4}));
+  m.rotation.x=Math.PI/2; m.position.set(x,1.3,z); scene.add(m); coins.push({mesh:m,got:false});
+}
+[[6,5],[-7,6],[10,-5],[-9,-9],[3,-11],[-13,2],[14,9],[0,14]].forEach(p=>coin(p[0],p[1]));
+
+// ===== OBBY (jump platforms) =====
+function plat(x,top,z,w,d,color){const h=0.6;const m=mk(w,h,d,color);m.position.set(x,top-h/2,z);scene.add(m);platforms.push({x,z,hx:w/2,hz:d/2,top});return m;}
+plat(-16,1.2,-6,3,3,0xff7eb6);
+plat(-16,2.4,-10,2.6,2.6,0x7ed0ff);
+plat(-13,3.6,-14,2.6,2.6,0xffe04d);
+plat(-9,4.8,-16,2.6,2.6,0x9b8bff);
+plat(-5,6.0,-18,2.6,2.6,0x6be06b);
+plat(0,6.0,-20.5,2.6,2.6,0xff9a3d);
+plat(5,6.0,-22.5,4.5,4.5,0xffffff);
+const gpole=mk(0.18,3,0.18,0x8a5a2b);gpole.position.set(5,7.5,-22.5);scene.add(gpole);
+const gcloth=mk(0.08,1.1,1.7,0xff3b6b);gcloth.position.set(5.85,8.4,-22.5);scene.add(gcloth);
+const goal={x:5,z:-22.5,done:false};
+function groundUnder(x,z,fy){let g=0;for(const p of platforms){if(x>=p.x-p.hx&&x<=p.x+p.hx&&z>=p.z-p.hz&&z<=p.z+p.hz){if(p.top<=fy+0.35&&p.top>g)g=p.top;}}return g;}
+
+// ===== OTHER PLAYERS (NPCs) =====
+function tag(text){const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');
+  x.fillStyle='rgba(0,0,0,.5)';x.beginPath();if(x.roundRect)x.roundRect(8,8,240,48,14);else x.rect(8,8,240,48);x.fill();
+  x.fillStyle='#fff';x.font='bold 32px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,33);
+  const t=new THREE.CanvasTexture(c);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+  s.scale.set(2.8,0.7,1);s.position.y=3.7;return s;}
+const npcs=[];
+function makeNPC(color,name,x,z){const g=new THREE.Group();
+  const body=mk(1.3,1.6,0.7,color);body.position.y=1.5;g.add(body);
+  const head=mk(1.0,1.0,1.0,0xf4c6a0);head.position.y=2.75;g.add(head);
+  const e1=mk(0.13,0.18,0.05,0x222222);e1.position.set(-0.22,2.82,0.5);g.add(e1);
+  const e2=mk(0.13,0.18,0.05,0x222222);e2.position.set(0.22,2.82,0.5);g.add(e2);
+  const sm=mk(0.4,0.08,0.05,0x222222);sm.position.set(0,2.55,0.5);g.add(sm);
+  const aL=mk(0.42,1.5,0.5,color);aL.position.set(-0.88,1.55,0);g.add(aL);
+  const aR=mk(0.42,1.5,0.5,color);aR.position.set(0.88,1.55,0);g.add(aR);
+  const lL=mk(0.5,1.4,0.6,0x39414e);lL.position.set(-0.32,0.7,0);g.add(lL);
+  const lR=mk(0.5,1.4,0.6,0x39414e);lR.position.set(0.32,0.7,0);g.add(lR);
+  g.add(tag(name));g.position.set(x,0,z);scene.add(g);
+  npcs.push({g,target:new THREE.Vector3(x,0,z),t:Math.random()*9,face:0});}
+makeNPC(0xff5d6c,'Max',-8,7);makeNPC(0x5db4ff,'Liv',11,-2);makeNPC(0x6be06b,'Noah',-3,-9);makeNPC(0xffa83d,'Ella',13,8);
+function updateNPCs(dt){for(const n of npcs){const dx=n.target.x-n.g.position.x,dz=n.target.z-n.g.position.z;const dist=Math.hypot(dx,dz);
+  if(dist<1){n.target.set((Math.random()*2-1)*22,0,(Math.random()*2-1)*22);}
+  else{n.g.position.x+=dx/dist*3*dt;n.g.position.z+=dz/dist*3*dt;n.face=Math.atan2(dx,dz);}
+  n.g.rotation.y=lerpAngle(n.g.rotation.y,n.face,0.12);n.t+=dt;n.g.position.y=Math.abs(Math.sin(n.t*6))*0.12;}}
+
+// ===== PETS (hamster + cat) =====
+function pcm(w,h,d,c,x,y,z){const m=mk(w,h,d,c);m.position.set(x,y,z);return m;}
+function makeHamster(){const g=new THREE.Group();
+  g.add(pcm(0.85,0.72,1.0,0xe7b06a,0,0.42,0));g.add(pcm(0.6,0.55,0.5,0xf0c485,0,0.55,0.55));
+  g.add(pcm(0.5,0.42,0.42,0xfbe6c8,0,0.38,0.52));
+  g.add(pcm(0.2,0.2,0.09,0xd49a55,-0.22,0.86,0.5));g.add(pcm(0.2,0.2,0.09,0xd49a55,0.22,0.86,0.5));
+  g.add(pcm(0.09,0.11,0.05,0x222222,-0.15,0.6,0.82));g.add(pcm(0.09,0.11,0.05,0x222222,0.15,0.6,0.82));
+  g.add(pcm(0.12,0.09,0.06,0xff8aa0,0,0.48,0.83));g.scale.setScalar(0.95);scene.add(g);return g;}
+function makeCat(){const g=new THREE.Group();
+  g.add(pcm(0.7,0.6,1.25,0xf2a23a,0,0.62,0));g.add(pcm(0.62,0.58,0.55,0xf2a23a,0,1.0,0.62));
+  const e1=pcm(0.2,0.26,0.1,0xf2a23a,-0.22,1.34,0.62);e1.rotation.z=0.25;g.add(e1);
+  const e2=pcm(0.2,0.26,0.1,0xf2a23a,0.22,1.34,0.62);e2.rotation.z=-0.25;g.add(e2);
+  g.add(pcm(0.1,0.13,0.05,0x2f8f4f,-0.16,1.05,0.9));g.add(pcm(0.1,0.13,0.05,0x2f8f4f,0.16,1.05,0.9));
+  g.add(pcm(0.1,0.08,0.05,0xff8aa0,0,0.92,0.91));
+  const tail=pcm(0.16,0.16,0.8,0xf2a23a,0,0.9,-0.72);tail.rotation.x=0.7;g.add(tail);
+  g.add(pcm(0.18,0.5,0.18,0xf2a23a,-0.22,0.25,0.4));g.add(pcm(0.18,0.5,0.18,0xf2a23a,0.22,0.25,0.4));
+  g.add(pcm(0.18,0.5,0.18,0xf2a23a,-0.22,0.25,-0.4));g.add(pcm(0.18,0.5,0.18,0xf2a23a,0.22,0.25,-0.4));
+  g.scale.setScalar(0.92);scene.add(g);return g;}
+const pets=[{g:makeHamster(),sign:-1,t:0},{g:makeCat(),sign:1,t:0}];
+function updatePets(dt){const fwd=new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));
+  const side=new THREE.Vector3(fwd.z,0,-fwd.x);
+  for(const p of pets){const tx=player.position.x-fwd.x*2.6+side.x*p.sign*1.3,tz=player.position.z-fwd.z*2.6+side.z*p.sign*1.3;
+    const dx=tx-p.g.position.x,dz=tz-p.g.position.z,dist=Math.hypot(dx,dz);
+    p.g.position.x+=dx*Math.min(1,dt*5);p.g.position.z+=dz*Math.min(1,dt*5);
+    if(dist>0.05)p.g.rotation.y=lerpAngle(p.g.rotation.y,Math.atan2(dx,dz),0.2);
+    p.t+=dt;p.g.position.y=dist>0.3?Math.abs(Math.sin(p.t*11))*0.28:0;}}
+
+// ===== CODE WALLS (Roblox-spel-koder, kollade 2026-06-22) =====
+const N99=[
+  {c:'forestwakesup26',r:'15 diamanter + 3 lågor'},
+  {c:'afterparty',r:'15 diamanter'}
+];
+const DTI=[
+  {c:'1CON1CF4TMA',r:'klänning/tröja'},{c:'2GETHER',r:'klassisk DTI-docka'},
+  {c:'2YEARS',r:'jubileumsklänning'},{c:'3NCHANTEDD1ZZY',r:'trollstav/spira'},
+  {c:'ANGELT4NKED',r:'lila katthjälm'},{c:'ASHLEYBUNNI',r:'kanintofflor'},
+  {c:'B3APL4YS_D0L1E',r:'docka'},{c:'BELALASLAY',r:'off-shoulder jacka'},
+  {c:'BHM26',r:'Black Panther-klänning + jacka'},{c:'C4LLMEHH4LEY',r:'pannband + klänning'},
+  {c:'CA11MEHHALEY',r:'björndräkt'},{c:'CH00P1E_1S_B4CK',r:'jacka, kjol, skor'},
+  {c:'CH00P1E_B4CK_AGA1N',r:'Choopie-outfit'},{c:'CHOOPIE10K',r:'gratis föremål'},
+  {c:'D1ORST4R',r:'stjärnväska + rosett'},{c:'ELLA',r:'rosa kjol'},
+  {c:'IBELLASLAY',r:'vattenmelonflätor'},{c:'ITSJUSTNICHOLAS',r:'jacka'},
+  {c:'KATSEYE',r:'Katseye-set'},{c:'KITTYUUHH',r:'kattunge (husdjur)'},
+  {c:'KREEK',r:'mössa/hatt'},{c:'LABOOTS',r:'två par stövlar'},
+  {c:'LANA',r:'topp, shorts, benvärmare'},{c:'LANABOW',r:'rosa hårrosett'},
+  {c:'LANATUTU',r:'tutukjol'},{c:'LEAHASHE',r:'huvtröja + mjukisbyxor'},
+  {c:'LIONDANCER',r:'lejondans-set'},{c:'LNY',r:'kinesiska nyårskläder'},
+  {c:'M0T0PRINCESSWAV',r:'guldtiara'},{c:'M3RM4ID',r:'sjöjungfrusvans + topp'},
+  {c:'MEGANPLAYSBOOTS',r:'glitterstövlar'},{c:'PIXIIUWU',r:'älvaklänning'},
+  {c:'RDC2025',r:'lanyard + bälte'},{c:'S3M_0W3N_Y4Y',r:'yxa/stav'},
+  {c:'SUBM15CY',r:'pärlhalsband + fransar'},{c:'TEKKYOOZ',r:'handväska'},
+  {c:'UMOYAE',r:'blå tutu-klänning'},{c:'VANILLAMACE',r:'Vanilla Mace-föremål'},
+  {c:'YEAROFTHESNAKE',r:'ormsmycken'}
+];
+function makeCodeWall(title,list,x,z){const g=new THREE.Group();
+  const n=list.length,rowsMax=13,cols=Math.ceil(n/rowsMax),rows=Math.ceil(n/cols);
+  const colW=270,rowH=30,padTop=86,padBot=40,padX=30;
+  const cw=cols*colW+padX*2,ch=padTop+rows*rowH+padBot;
+  const c=document.createElement('canvas');c.width=cw;c.height=ch;const ctx=c.getContext('2d');
+  ctx.fillStyle='#2b2140';ctx.fillRect(0,0,cw,ch);
+  ctx.strokeStyle='#ffe04d';ctx.lineWidth=8;ctx.strokeRect(6,6,cw-12,ch-12);
+  ctx.fillStyle='#ffe04d';ctx.font='bold 34px Arial';ctx.textAlign='center';ctx.fillText(title,cw/2,54);
+  ctx.font='bold 20px Arial';ctx.textAlign='left';ctx.fillStyle='#8df0ff';
+  list.forEach((it,i)=>{const col=Math.floor(i/rows),row=i%rows;ctx.fillText('• '+it.c,padX+col*colW,padTop+row*rowH);});
+  const S=70,pw=cw/S,ph=ch/S;
+  const tex=new THREE.CanvasTexture(c);
+  const pl=new THREE.Mesh(new THREE.PlaneGeometry(pw,ph),new THREE.MeshBasicMaterial({map:tex}));
+  pl.rotation.y=Math.PI;pl.position.set(0,ph/2+1.2,-0.22);g.add(pl);
+  const wb=mk(pw+0.6,ph+0.8,0.4,0x4a3a78);wb.position.set(0,ph/2+1.2,0);g.add(wb);
+  g.position.set(x,0,z);scene.add(g);return g;}
+makeCodeWall('99 NIGHTS IN THE FOREST',N99,-9,20);
+makeCodeWall('DRESS TO IMPRESS',DTI,5,20);
+// fillable codes panel (HTML)
+(function(){const listEl=document.getElementById('codesList');if(!listEl)return;
+  function sec(t,arr){let h='<h2>'+t+'</h2>';for(const it of arr)h+='<div class="code"><b>'+it.c+'</b><span>'+it.r+'</span></div>';return h;}
+  listEl.innerHTML=sec('🌲 99 Nights in the Forest',N99)+sec('👗 Dress to Impress',DTI)
+    +'<p style="opacity:.6;font-size:12px;margin-top:12px">Koder kan gå ut. Kollade 2026-06-22. Skriv exakt: STORA bokstäver, 0 = noll (inte O).</p>';
+  document.getElementById('codesBtn').onclick=()=>document.getElementById('codesPanel').style.display='flex';
+  document.getElementById('codesClose').onclick=()=>document.getElementById('codesPanel').style.display='none';
+  document.getElementById('codesPanel').onclick=e=>{if(e.target.id==='codesPanel')e.target.style.display='none';};
+})();
+
+// ===== ANIMATION POSE =====
+let bobY=0;
+function pose(mode,t){
+  let lx=0,rx=0,lz=-0.10,rz2=0.10,hlx=0,hrx=0,bob=0;
+  if(mode==='walk'){const s=Math.sin(t*10);hlx=s*0.6;hrx=-s*0.6;lx=-s*0.6;rx=s*0.6;bob=Math.abs(Math.sin(t*10))*0.10;}
+  else{const s=Math.sin(t*1.8);lx=s*0.05;rx=-s*0.05;bob=s*0.05;}
+  shoL.rotation.set(lx,0,lz);shoR.rotation.set(rx,0,rz2);
+  hipL.rotation.set(hlx,0,0);hipR.rotation.set(hrx,0,0);
+  bobY=bob;
+}
+
+// ===== GAME STATE / INPUT =====
+const GROUND=3.45, SPEED=8, JUMP=18, GRAV=30;
+let vy=0,feetY=0,grounded=true,targetFacing=0,animT=0,score=0,camYaw=0,camPitch=0.52;
+const keys={};
+addEventListener('keydown',e=>{keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();});
+addEventListener('keyup',e=>{keys[e.code]=false;});
+// touch pad
+function bindHold(el,code){
+  const on=e=>{e.preventDefault();keys[code]=true;};const off=e=>{e.preventDefault();keys[code]=false;};
+  el.addEventListener('pointerdown',on);el.addEventListener('pointerup',off);
+  el.addEventListener('pointerleave',off);el.addEventListener('pointercancel',off);
+}
+document.querySelectorAll('#pad button[data-k]').forEach(b=>{
+  const map={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};bindHold(b,map[b.dataset.k]);});
+bindHold(document.getElementById('jump'),'Space');
+// drag to look around (orbit camera) — Roblox style
+let dragging=false,lastX=0,lastY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;});
+window.addEventListener('pointermove',e=>{if(!dragging)return;camYaw-=(e.clientX-lastX)*0.01;camPitch=Math.max(0.12,Math.min(1.25,camPitch+(e.clientY-lastY)*0.006));lastX=e.clientX;lastY=e.clientY;});
+window.addEventListener('pointerup',()=>{dragging=false;});
+
+function lerpAngle(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
+function setScore(){document.getElementById('score').textContent=score;
+  if(score>=coins.length)document.getElementById('win').style.display='flex';}
+window.restart=function(){coins.forEach(c=>{c.got=false;c.mesh.visible=true;});score=0;setScore();
+  document.getElementById('win').style.display='none';player.position.set(0,GROUND,0);player.rotation.y=0;targetFacing=0;feetY=0;vy=0;goal.done=false;};
+
+function update(dt){
+  const up=keys.ArrowUp||keys.KeyW,dn=keys.ArrowDown||keys.KeyS,lf=keys.ArrowLeft||keys.KeyA,rt=keys.ArrowRight||keys.KeyD;
+  const mf=(up?1:0)-(dn?1:0),ms=(rt?1:0)-(lf?1:0);
+  const camF=new THREE.Vector3(Math.sin(camYaw),0,Math.cos(camYaw));
+  const camRt=new THREE.Vector3(-Math.cos(camYaw),0,Math.sin(camYaw));
+  const move=new THREE.Vector3().addScaledVector(camF,mf).addScaledVector(camRt,ms);
+  const moving=move.lengthSq()>0.001;
+  if(moving){move.normalize();
+    player.position.x=Math.max(-28,Math.min(28,player.position.x+move.x*SPEED*dt));
+    player.position.z=Math.max(-28,Math.min(28,player.position.z+move.z*SPEED*dt));
+    targetFacing=Math.atan2(move.x,move.z);}
+  player.rotation.y=lerpAngle(player.rotation.y,targetFacing,0.25);
+  if(keys.Space&&grounded){vy=JUMP;grounded=false;}
+  vy-=GRAV*dt;feetY+=vy*dt;
+  const gr=groundUnder(player.position.x,player.position.z,feetY);
+  if(feetY<=gr){feetY=gr;vy=0;grounded=true;}else grounded=false;
+  animT+=dt;pose(moving?'walk':'idle',animT);
+  player.position.y=GROUND+feetY+(grounded?bobY:0);
+  // fixed follow camera (behind in -z) — no rotation feedback
+  const dist=11,hz=dist*Math.cos(camPitch);
+  const camDes=new THREE.Vector3(
+    player.position.x-Math.sin(camYaw)*hz,
+    GROUND+dist*Math.sin(camPitch)+1.0,
+    player.position.z-Math.cos(camYaw)*hz);
+  camera.position.lerp(camDes,0.18);
+  camera.lookAt(player.position.x,GROUND+1.4,player.position.z);
+  for(const c of coins){if(!c.got){c.mesh.rotation.z+=dt*3;
+    const dx=player.position.x-c.mesh.position.x,dz=player.position.z-c.mesh.position.z;
+    if(dx*dx+dz*dz<2.6){c.got=true;c.mesh.visible=false;score++;setScore();}}}
+  updateNPCs(dt);updatePets(dt);
+  if(!goal.done){const gx=player.position.x-goal.x,gz=player.position.z-goal.z;
+    if(gx*gx+gz*gz<6&&feetY>3.5){goal.done=true;document.getElementById('help').textContent='\u{1F3C1} Du klarade obbyn! \u{1F389}';}}
+}
+player.position.set(0,GROUND,0);
+const clock=new THREE.Clock();
+function loop(){const dt=Math.min(0.05,clock.getDelta());update(dt);renderer.render(scene,camera);requestAnimationFrame(loop);}
+loop();
+addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);});
+// test helper
+window.simulate=function(sec){for(let i=0;i<sec*60;i++)update(1/60);renderer.render(scene,camera);};
+</script>
+</body>
+</html>
