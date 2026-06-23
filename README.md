@@ -1,16 +1,14 @@
 # Sonjas värld ✨
 
-Sonjas egna Roblox-inspirerade spel och avatarer — ren statisk HTML (Three.js från CDN).
+Sonjas egna Roblox-inspirerade 3D-spel — ren statisk HTML (Three.js från CDN).
 
-## Sidor (`site/`)
-| Fil             | Vad                                                    |
-| --------------- | ------------------------------------------------------ |
-| `index.html`    | Startsida / meny som länkar de tre sidorna nedan       |
-| `spel.html`     | Plattformsspel — spring runt och samla 8 stjärnor (3D) |
-| `avatar-3d.html`| 3D-avatar du styr själv                                |
-| `avatar.html`   | 2D-avatar (SVG)                                         |
+## Sajten (`site/`)
+Hela sajten är **en enda självständig fil**: `site/index.html` (inga lokala asset-beroenden).
+Spelet innehåller: spring runt och samla 8 ⭐, obby/hoppbana med målflagga 🏁, husdjur 🐹🐱,
+andra spelare (Max/Liv/Noah/Ella), muskamera, och en 📋 kod-panel med riktiga Roblox-koder.
 
-Alla sidor är självständiga (inga lokala asset-beroenden).
+> Tidigare fanns en meny + separata avatar-sidor; ersatt 2026-06-23 av den rikare enfilsversionen
+> (operatörsbeslut). Se `docs/superpowers/specs/`.
 
 ## Köra lokalt
 Det är bara statiska filer. Öppna `site/index.html` direkt i webbläsaren, eller servera mappen:

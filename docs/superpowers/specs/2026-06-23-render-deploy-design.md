@@ -1,7 +1,9 @@
 # Spec: Deploya "Sonjas värld" på Render
 
 **Datum:** 2026-06-23
-**Status:** Godkänd (design OK:ad i chatt 2026-06-23)
+**Status:** Levererad 2026-06-23. **Exekveringsnotis:** sajten gick först live som startsida +
+3 separata sidor; samma dag ersatt (operatörsbeslut) av en rikare **enfilsversion** av spelet
+(från en parallell sessions `sonja-roblox-spel/`) som nu utgör hela sajten (`site/index.html`).
 
 ## Mål
 Få Sonjas tre HTML-artefakter (spel + 2D-avatar + 3D-avatar) live på webben via Render, bakom

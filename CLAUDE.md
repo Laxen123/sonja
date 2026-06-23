@@ -4,7 +4,9 @@ Sonjas egna Roblox-inspirerade spel/avatarer. **Ren statisk HTML** (Three.js via
 backend, ingen build. Egen subprojekt-historik (gitignorerad i umbrella `98 Hobby/`).
 
 ## Struktur
-- `site/` — **den deployade sajten**. `index.html` (meny) + `spel.html`, `avatar-3d.html`, `avatar.html`.
+- `site/index.html` — **den deployade sajten**, en enda självständig fil (3D-spel: stjärnor, obby,
+  husdjur, NPC:er, muskamera, 📋 kod-panel). Källan kom från `sonja-roblox-spel/` (parallell session).
+- `sonja-roblox-spel/` — annan sessions arbetsmapp för spelet; rör inte utan koordinering.
 - `output/` — **slängbart** (gitignorerat): stora preview-PNG:er + daterade källfiler. Kopiera aldrig
   irreplaceable data hit; det canonical är `site/`.
 - `render.yaml` — Render Blueprint (static site, publish `./site`).
