@@ -1,0 +1,10 @@
+# Render Blueprint — Sonjas värld (static site)
+# Pure static HTML (Three.js from CDN). No build step, no server.
+# Auto-deploys on every push to the connected GitHub repo.
+services:
+  - type: web
+    name: sonjas-projekt
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: ./site
+    pullRequestPreviewsEnabled: false

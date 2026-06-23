@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Min Roblox-tjej – styr själv</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;user-select:none;-webkit-user-select:none;
+    font-family:'Comic Sans MS','Segoe UI',sans-serif;}
+  body{display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 30%, #ff9ad6 0%, #9b5cff 45%, #2a1a66 100%);}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.7;
+    background-image:
+      radial-gradient(2px 2px at 18% 28%,#fff,transparent),
+      radial-gradient(2px 2px at 78% 18%,#fff,transparent),
+      radial-gradient(1.5px 1.5px at 62% 72%,#fff,transparent),
+      radial-gradient(1.5px 1.5px at 33% 82%,#fff,transparent),
+      radial-gradient(2px 2px at 88% 58%,#fff,transparent),
+      radial-gradient(1.5px 1.5px at 10% 65%,#fff,transparent);}
+  #wrap{filter:drop-shadow(0 22px 34px rgba(0,0,0,.30));cursor:grab;}
+  #wrap:active{cursor:grabbing;}
+  canvas{display:block;touch-action:none;}
+  #ui{position:fixed;bottom:16px;left:0;right:0;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  button{border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:bold;cursor:pointer;
+    color:#3a1a5e;background:#ffffff;box-shadow:0 5px 0 rgba(0,0,0,.18);transition:transform .07s;}
+  button:hover{transform:translateY(-1px);}
+  button:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.18);}
+  button.on{background:#ffe04d;}
+  #tip{position:fixed;top:12px;left:0;right:0;text-align:center;color:#fff;font-size:14px;
+    text-shadow:0 2px 5px rgba(0,0,0,.4);opacity:.9;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="tip">🖱️ Dra för att snurra · scrolla för att zooma</div>
+  <div id="wrap"></div>
+  <div id="ui">
+    <button id="b-idle" class="on">🧍 Stå</button>
+    <button id="b-walk">🚶‍♀️ Gå</button>
+    <button id="b-wave">👋 Vinka</button>
+    <button id="b-dance">💃 Dansa</button>
+    <button id="b-hp">🎧 Hörlurar</button>
+  </div>
+<script>
+const W=Math.min(620,window.innerWidth), H=Math.min(720,window.innerHeight-40);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(30, W/H, 0.1, 100);
+camera.position.set(0,0.2,12.6);
+camera.lookAt(0,-0.2,0);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setSize(W,H); renderer.setPixelRatio(2); renderer.outputEncoding=THREE.sRGBEncoding;
+const wrap=document.getElementById('wrap'); wrap.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.66));
+const key=new THREE.DirectionalLight(0xffffff,0.72); key.position.set(5,9,11); scene.add(key);
+const fill=new THREE.DirectionalLight(0xffd9f2,0.30); fill.position.set(-7,3,5); scene.add(fill);
+const rim=new THREE.DirectionalLight(0xb38bff,0.85); rim.position.set(-4,5,-9); scene.add(rim);
+
+const avatar=new THREE.Group(); const baseY=0.4; avatar.position.y=baseY; scene.add(avatar);
+
+const SKIN=0xf4c6a0, SWEATER=0xf6efde, JEANS=0x4f6f9a, HAIR=0xeec25c,
+      SHOE=0xffffff, DARK=0x232a33, CYAN=0x2ee6da;
+function mk(w,h,d,color,rough){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+  new THREE.MeshStandardMaterial({color:color,roughness:rough===undefined?0.45:rough,metalness:0}));}
+function add(w,h,d,color,x,y,z,rough){const m=mk(w,h,d,color,rough);m.position.set(x,y,z);avatar.add(m);return m;}
+function piece(parent,w,h,d,color,x,y,z,rough){const m=mk(w,h,d,color,rough);m.position.set(x,y,z);parent.add(m);return m;}
+
+// ===== SLIM BODY (normal girl proportions) =====
+add(1.25,1.9,0.62, SWEATER, 0,0,0);                 // torso (slim)
+add(1.15,1.15,1.15, SKIN, 0,1.5,0);                 // head
+
+// arms (thin) — swinging shoulder pivots
+const shoL=new THREE.Group(); shoL.position.set(-0.875,0.92,0); avatar.add(shoL);
+piece(shoL,0.5,2.0,0.5,SWEATER,0,-1.0,0); piece(shoL,0.5,0.55,0.5,SKIN,0,-1.85,0);
+const shoR=new THREE.Group(); shoR.position.set(0.875,0.92,0); avatar.add(shoR);
+piece(shoR,0.5,2.0,0.5,SWEATER,0,-1.0,0); piece(shoR,0.5,0.55,0.5,SKIN,0,-1.85,0);
+
+// legs (thin, longer) — hip pivots
+const hipL=new THREE.Group(); hipL.position.set(-0.33,-0.95,0); avatar.add(hipL);
+piece(hipL,0.56,2.2,0.56,JEANS,0,-1.1,0); piece(hipL,0.6,0.4,0.78,SHOE,0,-2.28,0.1);
+const hipR=new THREE.Group(); hipR.position.set(0.33,-0.95,0); avatar.add(hipR);
+piece(hipR,0.56,2.2,0.56,JEANS,0,-1.1,0); piece(hipR,0.6,0.4,0.78,SHOE,0,-2.28,0.1);
+
+// ===== HAIR (sized to slim head) =====
+add(1.2,0.55,1.2, HAIR, 0,2.12,0);          // top
+add(1.22,1.25,0.45, HAIR, 0,1.42,-0.45);    // back of head
+add(1.15,0.42,0.22, HAIR, 0,1.86,0.52);     // fringe
+add(0.36,2.7,0.5, HAIR, -0.72,0.35,0.06);   // left strand
+add(0.36,2.7,0.5, HAIR,  0.72,0.35,0.06);   // right strand
+add(1.1,1.9,0.26, HAIR, 0,0.3,-0.5);        // long back hair
+
+// ===== headphones (toggle) =====
+const hpGroup=new THREE.Group(); avatar.add(hpGroup);
+const band=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.1,12,32),
+  new THREE.MeshStandardMaterial({color:DARK,roughness:0.35,metalness:0.2}));
+band.position.set(0,1.7,0); hpGroup.add(band);
+function cup(x){
+  const g=new THREE.Group(); g.position.set(x,1.42,0.18);
+  const c=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.2,24),
+    new THREE.MeshStandardMaterial({color:DARK,roughness:0.35,metalness:0.2}));
+  c.rotation.z=Math.PI/2; g.add(c);
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.22,24),
+    new THREE.MeshStandardMaterial({color:CYAN,roughness:0.3,emissive:0x0c6f6a}));
+  ring.rotation.z=Math.PI/2; g.add(ring);
+  hpGroup.add(g);
+}
+cup(-0.72); cup(0.72);
+
+// ===== COOL FACE =====
+function faceTex(){
+  const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  function eye(ex){
+    x.fillStyle='#241f2e';
+    x.beginPath();x.ellipse(ex,118,17,23,0,0,7);x.fill();
+    const g=x.createRadialGradient(ex-3,112,2,ex,118,16);
+    g.addColorStop(0,'#a99bff');g.addColorStop(.55,'#5b6bd6');g.addColorStop(1,'#241f2e');
+    x.fillStyle=g;x.beginPath();x.ellipse(ex,120,11,16,0,0,7);x.fill();
+    x.fillStyle='#fff';
+    x.beginPath();x.arc(ex-5,110,4.6,0,7);x.fill();
+    x.beginPath();x.arc(ex+5,126,2.4,0,7);x.fill();
+    x.strokeStyle='#241f2e';x.lineWidth=5;x.lineCap='round';
+    x.beginPath();x.moveTo(ex-16,104);x.quadraticCurveTo(ex,93,ex+17,102);x.stroke();
+    x.lineWidth=3;
+    x.beginPath();x.moveTo(ex+15,101);x.lineTo(ex+25,95);x.stroke();
+    x.beginPath();x.moveTo(ex+16,106);x.lineTo(ex+26,105);x.stroke();
+  }
+  eye(96); eye(160);
+  x.strokeStyle='#b07b42';x.lineWidth=4;x.lineCap='round';
+  x.beginPath();x.moveTo(82,88);x.quadraticCurveTo(96,82,110,87);x.stroke();
+  x.beginPath();x.moveTo(146,87);x.quadraticCurveTo(160,82,174,88);x.stroke();
+  x.fillStyle='rgba(255,150,165,.5)';
+  x.beginPath();x.ellipse(72,152,15,9,0,0,7);x.fill();
+  x.beginPath();x.ellipse(184,152,15,9,0,0,7);x.fill();
+  x.strokeStyle='#c4506a';x.lineWidth=6;x.lineCap='round';
+  x.beginPath();x.arc(128,150,24,0.16*Math.PI,0.84*Math.PI);x.stroke();
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t;
+}
+const face=new THREE.Mesh(new THREE.PlaneGeometry(1.12,1.12),
+  new THREE.MeshBasicMaterial({map:faceTex(),transparent:true}));
+face.position.set(0,1.5,0.586); avatar.add(face);
+
+// ===== flag on chest =====
+function flagTex(){
+  const c=document.createElement('canvas');c.width=228;c.height=120;const x=c.getContext('2d');
+  for(let i=0;i<13;i++){x.fillStyle=(i%2)?'#fff':'#b22234';x.fillRect(0,i*120/13,228,120/13);}
+  x.fillStyle='#3c3b6e';x.fillRect(0,0,96,65);x.fillStyle='#fff';
+  for(let r=0;r<4;r++)for(let cl=0;cl<5;cl++){x.beginPath();x.arc(12+cl*19,9+r*16,2.6,0,7);x.fill();}
+  return new THREE.CanvasTexture(c);
+}
+const flag=new THREE.Mesh(new THREE.PlaneGeometry(0.66,0.35),
+  new THREE.MeshBasicMaterial({map:flagTex(),transparent:true}));
+flag.position.set(0,0.2,0.316); avatar.add(flag);
+
+// ===== contact shadow =====
+function shadowTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
+  const g=x.createRadialGradient(64,64,4,64,64,60);g.addColorStop(0,'rgba(0,0,0,.5)');g.addColorStop(1,'rgba(0,0,0,0)');
+  x.fillStyle=g;x.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);}
+const shadow=new THREE.Mesh(new THREE.PlaneGeometry(3.4,2.4),
+  new THREE.MeshBasicMaterial({map:shadowTex(),transparent:true,depthWrite:false}));
+shadow.rotation.x=-Math.PI/2; shadow.position.set(0,-3.0,0); scene.add(shadow);
+
+// ===== ANIMATION =====
+let currentMode='idle', userRotY=-0.32, paused=false;
+const clock=new THREE.Clock();
+function pose(mode,t){
+  let bob=0, lx=0,rx=0,lz=-0.10,rz2=0.10, hlx=0,hrx=0, bodyZ=0;
+  if(mode==='idle'){const s=Math.sin(t*1.8);lx=s*0.05;rx=-s*0.05;bob=s*0.05;}
+  else if(mode==='walk'){const s=Math.sin(t*6);hlx=s*0.6;hrx=-s*0.6;lx=-s*0.6;rx=s*0.6;bob=Math.abs(Math.sin(t*6))*0.08;}
+  else if(mode==='wave'){rz2=2.3+Math.sin(t*9)*0.25;bob=Math.sin(t*1.8)*0.04;}
+  else if(mode==='dance'){const s=Math.sin(t*5);lz=-2.0+s*0.3;rz2=2.0+s*0.3;
+    lx=Math.sin(t*5)*0.3;rx=-Math.sin(t*5)*0.3;hlx=Math.sin(t*5)*0.18;hrx=-Math.sin(t*5)*0.18;
+    bob=Math.abs(Math.sin(t*5))*0.12;bodyZ=Math.sin(t*2.5)*0.08;}
+  shoL.rotation.set(lx,0,lz); shoR.rotation.set(rx,0,rz2);
+  hipL.rotation.set(hlx,0,0); hipR.rotation.set(hrx,0,0);
+  avatar.rotation.z=bodyZ; avatar.position.y=baseY+bob;
+}
+function loop(){
+  if(!paused){pose(currentMode,clock.getElapsedTime());avatar.rotation.y=userRotY;renderer.render(scene,camera);}
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ===== controls: buttons =====
+const btns={idle:'b-idle',walk:'b-walk',wave:'b-wave',dance:'b-dance'};
+function setMode(m){currentMode=m;for(const k in btns)document.getElementById(btns[k]).classList.toggle('on',k===m);}
+document.getElementById('b-idle').onclick=()=>setMode('idle');
+document.getElementById('b-walk').onclick=()=>setMode('walk');
+document.getElementById('b-wave').onclick=()=>setMode('wave');
+document.getElementById('b-dance').onclick=()=>setMode('dance');
+document.getElementById('b-hp').onclick=function(){hpGroup.visible=!hpGroup.visible;this.classList.toggle('on',hpGroup.visible);};
+
+// ===== controls: drag to rotate =====
+let dragging=false,lastX=0;
+wrap.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;wrap.setPointerCapture(e.pointerId);});
+wrap.addEventListener('pointermove',e=>{if(dragging){userRotY+=(e.clientX-lastX)*0.01;lastX=e.clientX;}});
+wrap.addEventListener('pointerup',()=>dragging=false);
+wrap.addEventListener('wheel',e=>{e.preventDefault();camera.position.z=Math.max(8,Math.min(18,camera.position.z+e.deltaY*0.01));},{passive:false});
+
+// capture helpers for stills
+window.snap=function(m,t,rot){paused=true;pose(m,t);avatar.rotation.y=(rot===undefined?userRotY:rot);renderer.render(scene,camera);};
+window.play=function(){paused=false;};
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Disposable scratch (big preview PNGs + dated source HTML).
+# Canonical site lives in site/ — see CLAUDE.md.
+output/
+
+# Env / secrets (keys live in 98 Hobby/.env per umbrella CLAUDE.md)
+.env
+.env.*
+!.env.local
+
+# OS / tooling cruft
+.DS_Store
+Thumbs.db
+node_modules/
+.scratch/

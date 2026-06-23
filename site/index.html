@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sonjas värld ✨</title>
+<meta name="description" content="Sonjas egna Roblox-spel och avatarer.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+<style>
+  :root{ --yellow:#ffe04d; --purple:#3a1a5e; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; min-height:100%; }
+  body{
+    font-family:'Comic Sans MS','Segoe UI',sans-serif;
+    color:#fff; text-align:center;
+    background:linear-gradient(180deg,#bfe9ff 0%, #8fd0ff 45%, #6fb7f0 100%);
+    background-attachment:fixed;
+    display:flex; flex-direction:column; align-items:center;
+    padding:28px 16px 48px; min-height:100vh;
+  }
+  /* floating stars */
+  .stars{ position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
+  .stars span{ position:absolute; top:110%; font-size:24px; opacity:.85;
+    animation:rise linear infinite; }
+  @keyframes rise{ to{ transform:translateY(-130vh) rotate(360deg); opacity:0; } }
+  .wrap{ position:relative; z-index:1; width:100%; max-width:760px; }
+
+  h1{ font-size:44px; margin:8px 0 4px; text-shadow:0 4px 10px rgba(0,0,0,.28); }
+  h1 .pop{ display:inline-block; animation:pop 2.2s ease-in-out infinite; }
+  @keyframes pop{ 0%,100%{ transform:scale(1) rotate(0); } 50%{ transform:scale(1.15) rotate(8deg); } }
+  .sub{ font-size:17px; opacity:.95; margin:0 0 26px; text-shadow:0 2px 5px rgba(0,0,0,.25); }
+
+  .cards{ display:grid; gap:18px; grid-template-columns:repeat(3,1fr); }
+  @media(max-width:640px){ .cards{ grid-template-columns:1fr; } h1{ font-size:36px; } }
+
+  a.card{
+    display:block; text-decoration:none; color:var(--purple);
+    background:rgba(255,255,255,.92); border-radius:24px;
+    padding:26px 18px; box-shadow:0 8px 0 rgba(0,0,0,.18), 0 14px 28px rgba(0,0,0,.18);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  a.card:hover,a.card:focus{ transform:translateY(-6px);
+    box-shadow:0 14px 0 rgba(0,0,0,.18), 0 22px 36px rgba(0,0,0,.22); outline:none; }
+  a.card:active{ transform:translateY(2px); box-shadow:0 4px 0 rgba(0,0,0,.18); }
+  .emoji{ font-size:64px; line-height:1; display:block; margin-bottom:10px; }
+  .title{ font-size:24px; font-weight:bold; margin:0; }
+  .desc{ font-size:14px; margin:6px 0 0; opacity:.85; }
+  .tag{ display:inline-block; margin-top:14px; background:var(--yellow); color:var(--purple);
+    font-weight:bold; font-size:15px; padding:9px 20px; border-radius:999px;
+    box-shadow:0 4px 0 rgba(0,0,0,.18); }
+
+  footer{ position:relative; z-index:1; margin-top:34px; font-size:13px; opacity:.8;
+    text-shadow:0 2px 4px rgba(0,0,0,.25); }
+</style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true">
+    <span style="left:8%;  animation-duration:13s; animation-delay:0s;">⭐</span>
+    <span style="left:24%; animation-duration:17s; animation-delay:3s;">🌟</span>
+    <span style="left:42%; animation-duration:11s; animation-delay:6s;">✨</span>
+    <span style="left:61%; animation-duration:15s; animation-delay:1.5s;">⭐</span>
+    <span style="left:78%; animation-duration:19s; animation-delay:8s;">🌟</span>
+    <span style="left:91%; animation-duration:14s; animation-delay:4.5s;">✨</span>
+  </div>
+
+  <div class="wrap">
+    <h1>Sonjas värld <span class="pop">✨</span></h1>
+    <p class="sub">Välj vad du vill leka med!</p>
+
+    <nav class="cards">
+      <a class="card" href="spel.html">
+        <span class="emoji">🎮</span>
+        <p class="title">Spelet</p>
+        <p class="desc">Spring runt och samla 8 stjärnor!</p>
+        <span class="tag">Spela ▶</span>
+      </a>
+
+      <a class="card" href="avatar-3d.html">
+        <span class="emoji">🕹️</span>
+        <p class="title">3D-avatar</p>
+        <p class="desc">Styr tjejen själv i 3D.</p>
+        <span class="tag">Styr ▶</span>
+      </a>
+
+      <a class="card" href="avatar.html">
+        <span class="emoji">🧍</span>
+        <p class="title">Min avatar</p>
+        <p class="desc">Titta på din egen avatar.</p>
+        <span class="tag">Visa ▶</span>
+      </a>
+    </nav>
+  </div>
+
+  <footer>Gjort av Sonja 💜</footer>
+</body>
+</html>
