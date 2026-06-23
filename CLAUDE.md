@@ -12,8 +12,11 @@ backend, ingen build. Egen subprojekt-historik (gitignorerad i umbrella `98 Hobb
 - `render.yaml` — Render Blueprint (static site, publish `./site`).
 
 ## Deploy (Render)
-- Static Site kopplad till GitHub-repot `Laxen123/sonja` (publikt, default-branch `main`).
-- **Auto-deploy på push till `main`** (till skillnad från vetapp som är manual deploy).
+- Static Site `srv-d8t4krnavr4c738ptqg0` i **Boardgame**-workspacet (`tea-d8c8u4h9rddc73fc97t0`),
+  kopplad till GitHub-repot `Laxen123/sonja` (publikt, default-branch `main`).
+- Live: **https://sonjas-projekt.onrender.com** · dashboard: `dashboard.render.com/static/srv-d8t4krnavr4c738ptqg0`
+- **Auto-deploy på push till `main`** (verifierad — GitHub-webhooken funkar; till skillnad från
+  vetapp som är manual deploy). Manuell deploy vid behov: `POST /v1/services/<srv>/deploys` med `RENDER_API_KEY`.
 - Verifiera efter push, men polla inte deploy-API:t i loop (åter-billas som cache-read varje varv).
 
 ## Köra lokalt
